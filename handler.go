@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type resp struct {
-	Valid bool `json:"valid"`
+	Cleaned_body string `json:"cleaned_body"`
 }
 
 type parameters struct {
@@ -56,7 +57,22 @@ func handlerValidate(w http.ResponseWriter, req *http.Request) {
 		errorRespHelper("Chirp is too long", w, 400)
 		return
 	}
+
+	badWords := []string{"kerfuffle", "sharbert", "fornax"}
+	cleanBody := cleanBody(param.Body, badWords)
 	respHelper(resp{
-		Valid: true,
+		Cleaned_body: cleanBody,
 	}, w, 200)
+}
+
+func cleanBody(body string, badWords []string) string {
+	splitBody := strings.Split(body, " ")
+	for i, word := range splitBody {
+		for _, badWord := range badWords {
+			if strings.Contains(strings.ToLower(word), badWord) {
+				splitBody[i] = "****"
+			}
+		}
+	}
+	return strings.Join(splitBody, " ")
 }
