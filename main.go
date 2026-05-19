@@ -23,6 +23,7 @@ func main() {
 	serveMux.HandleFunc("GET /admin/metrics", cfg.handlerMetrics)
 	serveMux.HandleFunc("GET /api/healthz", handlerStatus)
 	serveMux.HandleFunc("POST /admin/reset", cfg.handlerReset)
+	serveMux.HandleFunc("POST /api/validate_chirp", handlerValidate)
 
 	server := http.Server{
 		Addr:    port,
