@@ -17,7 +17,7 @@ type User struct {
 	Email     string    `json:"email"`
 }
 
-func (cfg *apiConfig) handlerUsers(w http.ResponseWriter, req *http.Request) {
+func (cfg *apiConfig) handlerPostUsers(w http.ResponseWriter, req *http.Request) {
 	type request struct {
 		Email string `json:"email"`
 	}
@@ -27,7 +27,7 @@ func (cfg *apiConfig) handlerUsers(w http.ResponseWriter, req *http.Request) {
 	err := decoder.Decode(&reqStruct)
 	if err != nil {
 		log.Printf("Error decoding: %v", err)
-		errorRespHelper("Something went wring", w, 500)
+		errorRespHelper("Something went wring", w, http.StatusInternalServerError)
 		return
 	}
 	userParams := database.CreateUserParams{
@@ -39,7 +39,7 @@ func (cfg *apiConfig) handlerUsers(w http.ResponseWriter, req *http.Request) {
 	user, err := cfg.db.CreateUser(req.Context(), userParams)
 	if err != nil {
 		log.Printf("Error creating user: %v", err)
-		errorRespHelper("Something went wring", w, 500)
+		errorRespHelper("Something went wring", w, http.StatusInternalServerError)
 		return
 	}
 	respHelper(User{
@@ -47,5 +47,5 @@ func (cfg *apiConfig) handlerUsers(w http.ResponseWriter, req *http.Request) {
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
-	}, w, 201)
+	}, w, http.StatusCreated)
 }
