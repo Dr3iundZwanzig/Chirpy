@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Dr3iundZwanzig/Chirpy/internal/auth"
 	"github.com/Dr3iundZwanzig/Chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -19,7 +20,8 @@ type User struct {
 
 func (cfg *apiConfig) handlerPostUsers(w http.ResponseWriter, req *http.Request) {
 	type request struct {
-		Email string `json:"email"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 	w.Header().Set("Content-Type", "application/json")
 	decoder := json.NewDecoder(req.Body)
@@ -27,14 +29,23 @@ func (cfg *apiConfig) handlerPostUsers(w http.ResponseWriter, req *http.Request)
 	err := decoder.Decode(&reqStruct)
 	if err != nil {
 		log.Printf("Error decoding: %v", err)
-		errorRespHelper("Something went wring", w, http.StatusInternalServerError)
+		errorRespHelper("Error decoding JSON", w, http.StatusInternalServerError)
 		return
 	}
+
+	reqHashedPassword, err := auth.HashedPassword(reqStruct.Password)
+	if err != nil {
+		log.Printf("Error hashing: %v", err)
+		errorRespHelper("Error hashing password", w, http.StatusInternalServerError)
+		return
+	}
+
 	userParams := database.CreateUserParams{
-		ID:        uuid.New(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		Email:     reqStruct.Email,
+		ID:             uuid.New(),
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		Email:          reqStruct.Email,
+		HashedPassword: reqHashedPassword,
 	}
 	user, err := cfg.db.CreateUser(req.Context(), userParams)
 	if err != nil {
