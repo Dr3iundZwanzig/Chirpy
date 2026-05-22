@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"net/http"
 	"testing"
 )
 
@@ -40,5 +41,39 @@ func TestCheckPasswordHashNoMatch(t *testing.T) {
 	}
 	if ok {
 		t.Errorf("Error password and has does match but it should not")
+	}
+}
+
+func TestGetBearerToken(t *testing.T) {
+	accessToken := "accessToken"
+	bearer := "Bearer " + accessToken
+	req, err := http.NewRequest("GET", "local", nil)
+	if err != nil {
+		t.Errorf("internal error making new request: %v", err)
+	}
+	req.Header.Add("Authorization", bearer)
+	token, err := GetBearerToken(req.Header)
+	if err != nil {
+		t.Errorf("Error getting token: %v", err)
+	}
+	if token != accessToken {
+		t.Errorf("Wrong token: %v", err)
+	}
+}
+
+func TestWrongFromatingGetBearerToken(t *testing.T) {
+	accessToken := "accessToken"
+	bearer := "Ber" + accessToken
+	req, err := http.NewRequest("GET", "local", nil)
+	if err != nil {
+		t.Errorf("internal error making new request: %v", err)
+	}
+	req.Header.Add("Authorization", bearer)
+	token, err := GetBearerToken(req.Header)
+	if err == nil {
+		t.Errorf("Error getting token: %v", err)
+	}
+	if token == accessToken {
+		t.Errorf("Token corret should be an empty string: %v", err)
 	}
 }

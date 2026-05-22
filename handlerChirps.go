@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Dr3iundZwanzig/Chirpy/internal/auth"
 	"github.com/Dr3iundZwanzig/Chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -65,8 +66,7 @@ func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, req *http.Request)
 
 func (cfg *apiConfig) handlerPostChirps(w http.ResponseWriter, req *http.Request) {
 	type parameters struct {
-		Body   string    `json:"body"`
-		UserId uuid.UUID `json:"user_id"`
+		Body string `json:"body"`
 	}
 	w.Header().Set("Content-Type", "application/json")
 
@@ -74,11 +74,22 @@ func (cfg *apiConfig) handlerPostChirps(w http.ResponseWriter, req *http.Request
 	param := parameters{}
 	err := decoder.Decode(&param)
 	if err != nil {
-		log.Printf("Error decoding request parameters")
+		log.Printf("Error decoding request parameters: %v", err)
 		errorRespHelper("Error decoding request parameters", w, http.StatusInternalServerError)
 		return
 	}
-
+	token, err := auth.GetBearerToken(req.Header)
+	if err != nil {
+		log.Printf("Error getting token: %v", err)
+		errorRespHelper("Unauthorized", w, http.StatusUnauthorized)
+		return
+	}
+	userId, err := auth.ValidateJWT(token, cfg.secret)
+	if err != nil {
+		log.Printf("Error validating token: %v", err)
+		errorRespHelper("Unauthorized", w, http.StatusUnauthorized)
+		return
+	}
 	if len(param.Body) > 140 {
 		log.Printf("Chirp is too long")
 		errorRespHelper("Chirp is too long", w, http.StatusBadRequest)
@@ -93,7 +104,7 @@ func (cfg *apiConfig) handlerPostChirps(w http.ResponseWriter, req *http.Request
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		Body:      cleanBody,
-		UserID:    param.UserId,
+		UserID:    userId,
 	}
 	chirp, err := cfg.db.CreateChirp(req.Context(), chirpParams)
 	if err != nil {

@@ -17,12 +17,17 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	platform       string
+	secret         string
 }
 
 func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatalln("error loading .env file")
+	}
+	secret, ok := os.LookupEnv("SECRET")
+	if !ok {
+		log.Fatalln("secret empty")
 	}
 	dburl, ok := os.LookupEnv("DB_URL")
 	if !ok {
@@ -40,6 +45,7 @@ func main() {
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
 		platform:       platform,
+		secret:         secret,
 	}
 
 	serveMux := http.NewServeMux()

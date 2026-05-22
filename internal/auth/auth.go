@@ -2,6 +2,8 @@ package auth
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/alexedwards/argon2id"
 )
@@ -26,4 +28,16 @@ func CheckPasswordHash(password string, hash string) (bool, error) {
 		return false, fmt.Errorf("wrong password")
 	}
 	return ok, nil
+}
+
+func GetBearerToken(headers http.Header) (string, error) {
+	TokenString := headers.Get("Authorization")
+	if TokenString == "" {
+		return "", fmt.Errorf("Error no token found in header")
+	}
+	tokenSplit := strings.Split(TokenString, " ")
+	if len(tokenSplit) < 2 || tokenSplit[0] != "Bearer" {
+		return "", fmt.Errorf("Error invalid token found in header")
+	}
+	return tokenSplit[1], nil
 }
