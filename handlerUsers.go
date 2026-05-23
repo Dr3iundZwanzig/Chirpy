@@ -60,3 +60,42 @@ func (cfg *apiConfig) handlerPostUsers(w http.ResponseWriter, req *http.Request)
 		Email:     user.Email,
 	}, w, http.StatusCreated)
 }
+
+func (cfg *apiConfig) handlerUpdateUserPasswordEmail(w http.ResponseWriter, req *http.Request) {
+	type request struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	w.Header().Set("Content-Type", "application/json")
+	decoder := json.NewDecoder(req.Body)
+	reqStruct := request{}
+	err := decoder.Decode(&reqStruct)
+	if err != nil {
+		log.Printf("Error decoding: %v", err)
+		errorRespHelper("Error decoding JSON", w, http.StatusInternalServerError)
+		return
+	}
+	reqHashedPassword, err := auth.HashedPassword(reqStruct.Password)
+	if err != nil {
+		log.Printf("Error hashing: %v", err)
+		errorRespHelper("Error hashing password", w, http.StatusInternalServerError)
+		return
+	}
+
+	userId, _, err := cfg.authHelper(w, req)
+	if err != nil {
+		return
+	}
+	err = cfg.db.UpdateUserPasswordEmail(req.Context(), database.UpdateUserPasswordEmailParams{
+		ID:             userId,
+		Email:          reqStruct.Email,
+		HashedPassword: reqHashedPassword,
+		UpdatedAt:      time.Now(),
+	})
+	if err != nil {
+		log.Printf("Error updating user: %v", err)
+		errorRespHelper("Error updating user", w, http.StatusInternalServerError)
+		return
+	}
+	respHelper(reqStruct, w, http.StatusOK)
+}

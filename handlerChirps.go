@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Dr3iundZwanzig/Chirpy/internal/auth"
 	"github.com/Dr3iundZwanzig/Chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -20,8 +19,40 @@ type Chirp struct {
 	UserId    uuid.UUID `json:"user_id"`
 }
 
+func (cfg *apiConfig) handlerDeleteChirp(w http.ResponseWriter, req *http.Request) {
+	userId, _, err := cfg.authHelper(w, req)
+	if err != nil {
+		return
+	}
+
+	chirpId, err := uuid.Parse(req.PathValue("chirpID"))
+	if err != nil {
+		log.Printf("Error parsing chirp id")
+		errorRespHelper("Error getting chirp id", w, http.StatusBadRequest)
+		return
+	}
+	chirpToDelete, err := cfg.db.GetChirpById(req.Context(), chirpId)
+	if err != nil {
+		log.Printf("Error getting chirp from database")
+		errorRespHelper("Error getting chirp from database", w, http.StatusNotFound)
+		return
+	}
+	if chirpToDelete.UserID != userId {
+		errorRespHelper("Forbidden", w, http.StatusForbidden)
+		return
+	}
+	err = cfg.db.DeleteChirp(req.Context(), chirpId)
+	if err != nil {
+		log.Printf("Error deleting chirp")
+		errorRespHelper("Error deleting chirp", w, http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (cfg *apiConfig) handlerGetChirp(w http.ResponseWriter, req *http.Request) {
-	chirpId, err := uuid.Parse(req.PathValue("id"))
+	chirpIdHeader := req.PathValue("chirpID")
+	chirpId, err := uuid.Parse(chirpIdHeader)
 	if err != nil {
 		log.Printf("Error parsing chirp id")
 		errorRespHelper("Error getting chirp id", w, http.StatusBadRequest)
@@ -78,18 +109,11 @@ func (cfg *apiConfig) handlerPostChirps(w http.ResponseWriter, req *http.Request
 		errorRespHelper("Error decoding request parameters", w, http.StatusInternalServerError)
 		return
 	}
-	token, err := auth.GetBearerToken(req.Header)
+	userId, _, err := cfg.authHelper(w, req)
 	if err != nil {
-		log.Printf("Error getting token: %v", err)
-		errorRespHelper("Unauthorized", w, http.StatusUnauthorized)
 		return
 	}
-	userId, err := auth.ValidateJWT(token, cfg.secret)
-	if err != nil {
-		log.Printf("Error validating token: %v", err)
-		errorRespHelper("Unauthorized", w, http.StatusUnauthorized)
-		return
-	}
+
 	if len(param.Body) > 140 {
 		log.Printf("Chirp is too long")
 		errorRespHelper("Chirp is too long", w, http.StatusBadRequest)
