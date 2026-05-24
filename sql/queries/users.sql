@@ -1,11 +1,12 @@
 -- name: CreateUser :one
-INSERT INTO users (id, created_at, updated_at, email, hashed_password)
+INSERT INTO users (id, created_at, updated_at, email, hashed_password, is_chirpy_red)
 VALUES (
     $1,
     $2,
     $3,
     $4,
-    $5
+    $5,
+    $6
 )
 RETURNING *;
 
@@ -26,3 +27,8 @@ SET email = $2,
     hashed_password = $3,
     updated_at = $4
 WHERE id = $1;
+
+-- name: UpdateChirpyRed :exec
+UPDATE users
+SET is_chirpy_red = $2
+WHERE id = $1; 

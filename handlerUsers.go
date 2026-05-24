@@ -12,10 +12,11 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
+	ID          uuid.UUID `json:"id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	Email       string    `json:"email"`
+	IsChirpyRed bool      `json:"is_chirpy_red"`
 }
 
 func (cfg *apiConfig) handlerPostUsers(w http.ResponseWriter, req *http.Request) {
@@ -46,6 +47,7 @@ func (cfg *apiConfig) handlerPostUsers(w http.ResponseWriter, req *http.Request)
 		UpdatedAt:      time.Now(),
 		Email:          reqStruct.Email,
 		HashedPassword: reqHashedPassword,
+		IsChirpyRed:    false,
 	}
 	user, err := cfg.db.CreateUser(req.Context(), userParams)
 	if err != nil {
@@ -54,10 +56,11 @@ func (cfg *apiConfig) handlerPostUsers(w http.ResponseWriter, req *http.Request)
 		return
 	}
 	respHelper(User{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
+		ID:          user.ID,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+		Email:       user.Email,
+		IsChirpyRed: user.IsChirpyRed,
 	}, w, http.StatusCreated)
 }
 
