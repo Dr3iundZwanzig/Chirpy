@@ -76,6 +76,15 @@ func (cfg *apiConfig) handlerGetChirp(w http.ResponseWriter, req *http.Request) 
 
 func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, req *http.Request) {
 	queryAuthorId := req.URL.Query().Get("author_id")
+	sortOption := req.URL.Query().Get("sort")
+	if sortOption == "" {
+		sortOption = "asc"
+	}
+	if sortOption != "asc" && sortOption != "desc" {
+		log.Printf("Error wrong sort option")
+		errorRespHelper("Error wrong sort option", w, http.StatusBadRequest)
+		return
+	}
 	var chirps []database.Chirp
 	var err error
 	if queryAuthorId != "" {
@@ -85,15 +94,19 @@ func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, req *http.Request)
 			errorRespHelper("Error getting chirp id", w, http.StatusBadRequest)
 			return
 		}
-		chirps, err = cfg.db.GetChirpsByUserId(req.Context(), authorId)
+		chirps, err = cfg.db.GetChirpsByUserId(req.Context(), database.GetChirpsByUserIdParams{
+			UserID:  authorId,
+			Column2: sortOption,
+		})
 	} else {
-		chirps, err = cfg.db.GetChirps(req.Context())
+		chirps, err = cfg.db.GetChirps(req.Context(), sortOption)
 	}
 	if err != nil {
 		log.Printf("Error getting chirps from database: %v", err)
 		errorRespHelper("Error getting chirps from database", w, http.StatusInternalServerError)
 		return
 	}
+
 	responseChirps := []Chirp{}
 	for _, chirp := range chirps {
 		responseChirps = append(responseChirps, Chirp{

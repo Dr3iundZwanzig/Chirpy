@@ -16,11 +16,15 @@ WHERE id = $1 LIMIT 1;
 -- name: GetChirpsByUserId :many
 SELECT * FROM chirps
 WHERE user_id = $1
-ORDER BY created_at ASC;
+ORDER BY
+CASE WHEN $2 = 'asc' THEN created_at END ASC,
+CASE WHEN $2 = 'desc' THEN created_at END DESC;
 
 -- name: GetChirps :many
 SELECT * FROM chirps
-ORDER BY created_at ASC;
+ORDER BY
+CASE WHEN $1 = 'asc' THEN created_at END ASC,
+CASE WHEN $1 = 'desc' THEN created_at END DESC;
 
 -- name: DeleteChirp :exec
 DELETE FROM chirps
