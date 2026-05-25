@@ -20,9 +20,11 @@ func (cfg *apiConfig) handlerUserUpgrade(w http.ResponseWriter, req *http.Reques
 	apiKey, err := auth.GetAPIKey(req.Header)
 	if err != nil {
 		errorRespHelper("Error no api key in header", w, http.StatusUnauthorized)
+		return
 	}
 	if apiKey != cfg.polkaApiKey {
 		errorRespHelper("Error wrong api key", w, http.StatusUnauthorized)
+		return
 	}
 	decoder := json.NewDecoder(req.Body)
 	reqStruct := request{}
